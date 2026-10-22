@@ -32,7 +32,7 @@ jobs:
           GITHUB_ACTOR: ${{ github.actor }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          ./gradlew generatePatchesList :patches:buildAndroid -x test --no-daemon
+          ./gradlew generatePatchesList :patches:buildAndroid -x test --no-daemon --dependency-verification=off
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
