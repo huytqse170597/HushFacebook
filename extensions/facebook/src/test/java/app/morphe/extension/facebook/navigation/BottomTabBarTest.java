@@ -49,6 +49,7 @@ public class BottomTabBarTest {
         Settings.BOTTOM_TAB_BAR.resetToDefault();
         Settings.TOP_TAB_BAR.resetToDefault();
         Settings.PHONE_LAYOUT_ON_BIG_SCREENS.resetToDefault();
+        Settings.TABLET_FOLD_LAYOUT_ON_BIG_SCREENS.resetToDefault();
         HookStatus.clear();
     }
 
@@ -124,6 +125,8 @@ public class BottomTabBarTest {
         assertNull("nothing asks before the switch changes", Settings.BOTTOM_TAB_BAR.userDialogMessage);
         assertEquals(true, Settings.PHONE_LAYOUT_ON_BIG_SCREENS.rebootApp);
         assertNull("nothing asks before the switch changes", Settings.PHONE_LAYOUT_ON_BIG_SCREENS.userDialogMessage);
+        assertEquals(true, Settings.TABLET_FOLD_LAYOUT_ON_BIG_SCREENS.rebootApp);
+        assertNull("nothing asks before the switch changes", Settings.TABLET_FOLD_LAYOUT_ON_BIG_SCREENS.userDialogMessage);
     }
 
     @Test
@@ -136,13 +139,36 @@ public class BottomTabBarTest {
     }
 
     @Test
+    public void tabletFoldLayoutOnBigScreensAnswersGateYes() {
+        Settings.TABLET_FOLD_LAYOUT_ON_BIG_SCREENS.save(true);
+        assertEquals(1, BottomTabBar.bigScreenGate());
+        assertEquals(1, BottomTabBar.bigScreenGate());
+        assertEquals(FamilyNames.BOTTOM_TAB_BAR + ": invoked 2, 1 found, 0 missing. Counted: "
+                + BottomTabBar.TABLET_FOLD_LAYOUT + " 2", statusLine());
+    }
+
+    @Test
+    public void deviceSpoofingReturnsGalaxyFoldWhenEnabled() {
+        assertEquals("real_model", BottomTabBar.spoofModel("real_model"));
+        assertEquals("real_man", BottomTabBar.spoofManufacturer("real_man"));
+        assertEquals("real_brand", BottomTabBar.spoofBrand("real_brand"));
+        Settings.TABLET_FOLD_LAYOUT_ON_BIG_SCREENS.save(true);
+        assertEquals(BottomTabBar.FOLD_MODEL, BottomTabBar.spoofModel("real_model"));
+        assertEquals(BottomTabBar.FOLD_MANUFACTURER, BottomTabBar.spoofManufacturer("real_man"));
+        assertEquals(BottomTabBar.FOLD_BRAND, BottomTabBar.spoofBrand("real_brand"));
+    }
+
+    @Test
     public void phoneLayoutOffOrPausedLeavesFacebooksGate() {
         assertFalse("the switch doesn't start off", Settings.PHONE_LAYOUT_ON_BIG_SCREENS.get());
+        assertFalse("the tablet switch doesn't start off", Settings.TABLET_FOLD_LAYOUT_ON_BIG_SCREENS.get());
+        assertEquals(-1, BottomTabBar.bigScreenGate());
         assertFalse("off, the big screen gate was answered", BottomTabBar.phoneLayout());
         Settings.PHONE_LAYOUT_ON_BIG_SCREENS.save(true);
         for (HushfacebookPause.Reason reason : new HushfacebookPause.Reason[] {
                 HushfacebookPause.Reason.SWITCH, HushfacebookPause.Reason.CRASH_LOOP}) {
             PauseForTests.pause(reason);
+            assertEquals(-1, BottomTabBar.bigScreenGate());
             assertFalse("a Hushfacebook paused by " + reason + " answered the big screen gate", BottomTabBar.phoneLayout());
             PauseForTests.resume();
         }

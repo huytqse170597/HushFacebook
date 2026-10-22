@@ -111,6 +111,10 @@ The top bar with search and Messenger stays put while you scroll down, instead o
 Phone layout on big screens	Bố cục điện thoại trên màn hình lớn
 # context: description of that switch; on a big screen Facebook keeps the tab bar at the top in a wider layout, so the tab bar switches above it do nothing there
 A tablet or an unfolded phone gets the layout Facebook uses on a phone, so the tab bar switches above work on the big screen too. Facebook's wider big screen layout goes away. Off by default, since it hasn't been tried on a big screen yet. Restart Facebook to see the change.	Máy tính bảng hoặc điện thoại gập khi mở ra sẽ dùng bố cục Facebook dành cho điện thoại, nên các công tắc thanh tab ở trên cũng hoạt động trên màn hình lớn. Bố cục rộng hơn dành cho màn hình lớn của Facebook sẽ mất đi. Mặc định tắt vì chưa được thử trên màn hình lớn. Khởi động lại Facebook để thấy thay đổi.
+# context: switch title under Appearance, for enabling tablet/foldable layout with Galaxy Z Fold device profile
+Tablet and foldable layout on big screens	Bố cục máy tính bảng và màn hình gập
+# context: description of that switch
+Enables Facebook's tablet and foldable layout (with Galaxy Z Fold device profile), giving tablets like Xiaomi Pad a proper multi-pane or centered layout instead of a stretched mobile phone feed. Restart Facebook to see the change.	Bật bố cục máy tính bảng và thiết bị gập của Facebook (giả lập Galaxy Z Fold), giúp máy tính bảng như Xiaomi Pad có giao diện đa cột hoặc căn giữa thay vì giao diện điện thoại bị kéo dãn. Khởi động lại Facebook để thấy thay đổi.
 # context: switch title under Appearance, after Phone layout on big screens; it makes Facebook's top bar (search and Messenger) and its tab bar partly transparent
 See-through bars	Thanh trong suốt
 # context: description of that switch; the feed is the list of posts on Home, and blurred means frosted like glass

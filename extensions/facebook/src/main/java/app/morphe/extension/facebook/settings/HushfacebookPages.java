@@ -132,7 +132,11 @@ final class HushfacebookPages {
                     L10n.t("A tablet or an unfolded phone gets the layout Facebook uses on a phone, so the tab bar switches "
                             + "above work on the big screen too. Facebook's wider big screen layout goes away. Off by "
                             + "default, since it hasn't been tried on a big screen yet. Restart Facebook to see the "
-                            + "change.")));
+                            + "change.")).needsOff(Settings.TABLET_FOLD_LAYOUT_ON_BIG_SCREENS));
+            appearance.addPreference(toggle(context, Settings.TABLET_FOLD_LAYOUT_ON_BIG_SCREENS,
+                    L10n.t("Enables Facebook's tablet and foldable layout (with Galaxy Z Fold device profile), giving tablets "
+                            + "like Xiaomi Pad a proper multi-pane or centered layout instead of a stretched mobile phone feed. "
+                            + "Restart Facebook to see the change.")).needsOff(Settings.PHONE_LAYOUT_ON_BIG_SCREENS));
             // Asked as each frame of the main screen draws, so a change shows right away.
             appearance.addPreference(toggle(context, Settings.TRANSLUCENT_BARS,
                     L10n.t("The top bar and the tab bar turn see-through, so the feed shows through them as you scroll. "

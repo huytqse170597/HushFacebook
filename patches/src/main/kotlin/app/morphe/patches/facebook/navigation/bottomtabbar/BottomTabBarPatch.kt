@@ -84,11 +84,13 @@ val bottomTabBarPatch = bytecodePatch(
         )
         val reads = mutableListOf<OverrideRead>()
         val paddings = mutableListOf<Method>()
+        val spoofs = mutableListOf<Method>()
         classDefForEach { classDef ->
             if (classDef.type.startsWith(EXTENSION_CLASSES)) return@classDefForEach
             classDef.methods.forEach { method ->
                 reads += overrideReads(method, key)
                 if (takesSystemBarPadding(method)) paddings += method
+                if (readsDeviceBuild(method)) spoofs += method
             }
         }
         if (reads.isEmpty()) refuse("nothing reads $key from FbSharedPreferences")
@@ -96,6 +98,9 @@ val bottomTabBarPatch = bytecodePatch(
         hookStatusBarStrip(paddings)
         reads.groupBy { it.method }.forEach { (method, sites) ->
             mutableClassDefBy(method.definingClass).findMutableMethodOf(method).hookOverrideReads(sites)
+        }
+        spoofs.forEach { method ->
+            mutableClassDefBy(method.definingClass).findMutableMethodOf(method).hookDeviceSpoof()
         }
         enableStatus("bottomTabBar")
     }

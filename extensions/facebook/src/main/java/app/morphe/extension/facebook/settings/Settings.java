@@ -1612,6 +1612,17 @@ public class Settings extends BaseSettings {
             new BooleanSetting("hushfacebook_phone_layout_big_screens", FALSE, true);
 
     /**
+     * Enables Facebook's tablet and foldable big screen layout and spoofs device identity as a
+     * Samsung Galaxy Z Fold (SM-F946B), giving tablets like Xiaomi Pad a proper multi-pane or
+     * centered feed instead of a stretched mobile phone interface
+     * ({@link app.morphe.extension.facebook.navigation.BottomTabBar#bigScreenGate}).
+     * Facebook decides on its big screen layout and HTTP User-Agent as it starts, so a change waits
+     * for a restart.
+     */
+    public static final BooleanSetting TABLET_FOLD_LAYOUT_ON_BIG_SCREENS =
+            new BooleanSetting("hushfacebook_tablet_fold_layout_big_screens", FALSE, true);
+
+    /**
      * The top bar and the tab bar let the feed show through, with a blur of it behind them on
      * Android 12 and newer (#124, {@link app.morphe.extension.facebook.navigation.TranslucentBars}).
      * Asked as each frame of the main screen draws, so a change shows right away.

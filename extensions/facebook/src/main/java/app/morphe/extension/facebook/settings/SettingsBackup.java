@@ -302,6 +302,7 @@ public final class SettingsBackup {
             Settings.KEEP_TAB_BAR,
             Settings.KEEP_TOP_BAR,
             Settings.PHONE_LAYOUT_ON_BIG_SCREENS,
+            Settings.TABLET_FOLD_LAYOUT_ON_BIG_SCREENS,
             Settings.TRANSLUCENT_BARS,
             Settings.HIDE_STATUS_BAR,
             Settings.HIDE_MESSENGER_BUTTON,

@@ -4,6 +4,7 @@
  */
 package app.morphe.patches.facebook.navigation.bottomtabbar
 
+import app.morphe.patcher.extensions.InstructionExtensions.addInstructions
 import app.morphe.patcher.extensions.InstructionExtensions.addInstructionsWithLabels
 import app.morphe.patcher.extensions.InstructionExtensions.getInstruction
 import app.morphe.patcher.patch.BytecodePatchContext
@@ -19,8 +20,8 @@ import com.android.tools.smali.dexlib2.iface.reference.FieldReference
 import com.android.tools.smali.dexlib2.iface.reference.MethodReference
 
 /*
- * Phone layout on big screens (#149). Read from 582, 2026-10-14; the obfuscated names are for
- * reviewers, the code never writes one down.
+ * Big screen layout and device spoofing (#149). Read from 582, 2026-10-14; the obfuscated names are
+ * for reviewers, the code never writes one down.
  *
  * The place that decides whether the tab bar goes to the bottom (582 LX/22j;->A08, one of the two
  * reads of the override Tab bar at the bottom answers) first asks a static check taking the
@@ -31,11 +32,17 @@ import com.android.tools.smali.dexlib2.iface.reference.MethodReference
  * main screen asks the same check in a dozen places of its own (FbChromeFragment's navigation bar,
  * the insets the bottom bar makes room for, the main screen's theme and layout mode), so answering
  * only the tab bar's place would leave the rest laid out for a big screen. The gate is asked by
- * the check and by the class's other writer of the flag, so a no there gives the whole app the
- * phone layout, the way accounts outside the big screen rollout get it.
+ * the check and by the class's other writer of the flag, so answering no gives the whole app the
+ * phone layout, while answering yes forces the tablet/foldable big screen layout on tablets like
+ * Xiaomi Pad 6 that Facebook otherwise serves stretched phone feeds.
  */
 
-internal const val PHONE_LAYOUT = "$BOTTOM_TAB_BAR->phoneLayout()Z"
+internal const val BIG_SCREEN_GATE = "$BOTTOM_TAB_BAR->bigScreenGate()I"
+internal const val SPOOF_MODEL = "$BOTTOM_TAB_BAR->spoofModel(Ljava/lang/String;)Ljava/lang/String;"
+internal const val SPOOF_MANUFACTURER = "$BOTTOM_TAB_BAR->spoofManufacturer(Ljava/lang/String;)Ljava/lang/String;"
+internal const val SPOOF_BRAND = "$BOTTOM_TAB_BAR->spoofBrand(Ljava/lang/String;)Ljava/lang/String;"
+
+private const val BUILD = "Landroid/os/Build;"
 
 // ACTIVITY is TabBarScrollAwayPatch.kt's.
 private const val CONTEXT = "Landroid/content/Context;"
@@ -102,9 +109,9 @@ internal fun BytecodePatchContext.hookBigScreenLayout(reads: List<OverrideRead>)
         it.name == gate.name && AccessFlags.STATIC.isSet(it.accessFlags) && it.returnType == "Z" &&
             it.parameterTypes.map(CharSequence::toString) == listOf(CONTEXT)
     } ?: return skip("$gate isn't in this build")
-    if (gateMethod.implementation?.instructions?.any { ((it as? ReferenceInstruction)?.reference)?.toString() == PHONE_LAYOUT } == true) return
+    if (gateMethod.implementation?.instructions?.any { ((it as? ReferenceInstruction)?.reference)?.toString() == BIG_SCREEN_GATE } == true) return
     if (gateMethod.implementation!!.registerCount < 2) return skip("$gate has no local register to borrow")
-    gateMethod.answerPhoneLayout()
+    gateMethod.answerBigScreenGate()
 }
 
 private fun skip(why: String) {
@@ -112,20 +119,63 @@ private fun skip(why: String) {
 }
 
 /**
- * [hookBigScreenLayout] for the gate itself: while the switch is on it answers no before it
- * reads a flag; otherwise its own first instruction runs. v0 is a local the gate sets before it
- * reads it, and the label binds to that real first instruction.
+ * [hookBigScreenLayout] for the gate itself: answers no (0) when Phone layout on big screens is on,
+ * answers yes (1) when Tablet and foldable layout is on, and otherwise runs Facebook's own first instruction.
+ * v0 is a local the gate sets before it reads it, and the label binds to that real first instruction.
  */
-internal fun MutableMethod.answerPhoneLayout() {
+internal fun MutableMethod.answerBigScreenGate() {
     addInstructionsWithLabels(
         0,
         """
-            invoke-static { }, $PHONE_LAYOUT
+            invoke-static { }, $BIG_SCREEN_GATE
             move-result v0
-            if-eqz v0, :facebook
-            const/4 v0, 0x0
+            if-ltz v0, :facebook
             return v0
         """,
         ExternalLabel("facebook", getInstruction(0)),
     )
+}
+
+/**
+ * Whether [method] reads [BUILD]'s static fields MODEL, MANUFACTURER, or BRAND.
+ */
+internal fun readsDeviceBuild(method: Method): Boolean {
+    val code = method.implementation?.instructions ?: return false
+    return code.any {
+        if (it.opcode != Opcode.SGET_OBJECT) return@any false
+        val ref = (it as? ReferenceInstruction)?.reference as? FieldReference ?: return@any false
+        ref.definingClass == BUILD && (ref.name == "MODEL" || ref.name == "MANUFACTURER" || ref.name == "BRAND")
+    }
+}
+
+/**
+ * Injects device spoofing after every static read of [BUILD]'s MODEL, MANUFACTURER, or BRAND.
+ */
+internal fun MutableMethod.hookDeviceSpoof() {
+    val code = implementation?.instructions ?: return
+    val sites = mutableListOf<Pair<Int, String>>()
+    for (i in code.indices) {
+        val insn = code[i]
+        if (insn.opcode == Opcode.SGET_OBJECT) {
+            val ref = (insn as? ReferenceInstruction)?.reference as? FieldReference ?: continue
+            if (ref.definingClass == BUILD) {
+                when (ref.name) {
+                    "MODEL" -> sites += (i to SPOOF_MODEL)
+                    "MANUFACTURER" -> sites += (i to SPOOF_MANUFACTURER)
+                    "BRAND" -> sites += (i to SPOOF_BRAND)
+                }
+            }
+        }
+    }
+    if (sites.isEmpty()) return
+    for ((idx, hookMethod) in sites.sortedByDescending { it.first }) {
+        val reg = (code[idx] as OneRegisterInstruction).registerA
+        addInstructions(
+            idx + 1,
+            """
+                invoke-static { v$reg }, $hookMethod
+                move-result-object v$reg
+            """,
+        )
+    }
 }

@@ -198,7 +198,7 @@ public enum PatchFamily {
     BOTTOM_TAB_BAR(FamilyNames.BOTTOM_TAB_BAR, "bottomTabBar", null,
             Settings.BOTTOM_TAB_BAR, Settings.TOP_TAB_BAR, Settings.TAB_BAR_SCROLL_AWAY, Settings.KEEP_TAB_BAR,
             Settings.KEEP_TOP_BAR,
-            Settings.PHONE_LAYOUT_ON_BIG_SCREENS, Settings.TRANSLUCENT_BARS, Settings.HIDE_STATUS_BAR,
+            Settings.PHONE_LAYOUT_ON_BIG_SCREENS, Settings.TABLET_FOLD_LAYOUT_ON_BIG_SCREENS, Settings.TRANSLUCENT_BARS, Settings.HIDE_STATUS_BAR,
             Settings.HIDE_MESSENGER_BUTTON, Settings.HIDE_MESSENGER_COUNT, Settings.HIDE_FACEBOOK_LOGO),
     FORCE_DARK_MODE(FamilyNames.FORCE_DARK_MODE, "forceDarkMode", null,
             Settings.FORCE_DARK_MODE),

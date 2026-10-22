@@ -33,6 +33,14 @@ public final class BottomTabBar {
     /** Counted each time Facebook's big screen layout check is answered no. */
     static final String PHONE_LAYOUT = "Big screen given the phone layout";
 
+    /** Counted each time Facebook's big screen layout check is forced to tablet/fold layout. */
+    static final String TABLET_FOLD_LAYOUT = "Big screen given the tablet/fold layout";
+
+    /** Spoofed device parameters for foldable/tablet layout (Samsung Galaxy Z Fold 5). */
+    public static final String FOLD_MODEL = "SM-F946B";
+    public static final String FOLD_MANUFACTURER = "samsung";
+    public static final String FOLD_BRAND = "samsung";
+
     /** Facebook's three-way preference value. Its class and its constants keep their names. */
     static final String TRI_STATE = "com.facebook.common.util.TriState";
 
@@ -73,23 +81,83 @@ public final class BottomTabBar {
 
     /**
      * The hook at the top of Facebook's check of whether its big screen layout may run at all, a
-     * set of MobileConfig flags (#149). Answering true tells it no, the answer accounts outside
-     * Facebook's big screen rollout get: a tablet or an unfolded phone then gets the phone layout,
-     * where the tab bar's place is the override {@link #override} answers, and every tab bar
-     * switch works. Off, paused, before the settings are ready, or when anything here fails, it's
-     * false and Facebook's own check runs.
+     * set of MobileConfig flags (#149).
+     *
+     * <p>Returns:
+     * <ul>
+     *   <li>{@code 0} (false) when {@link Settings#PHONE_LAYOUT_ON_BIG_SCREENS} is enabled, giving
+     *       tablets the phone layout.</li>
+     *   <li>{@code 1} (true) when {@link Settings#TABLET_FOLD_LAYOUT_ON_BIG_SCREENS} is enabled,
+     *       forcing Facebook's tablet/foldable big screen layout on tablets like Xiaomi Pad 6.</li>
+     *   <li>{@code -1} when off, paused, or before settings are ready, letting Facebook's original
+     *       gate logic execute.</li>
+     * </ul>
      */
-    public static boolean phoneLayout() {
+    public static int bigScreenGate() {
         try {
             HookStatus.invoked(FAMILY);
-            if (!Utils.settingsReady() || !Settings.PHONE_LAYOUT_ON_BIG_SCREENS.get()) return false;
-            HookStatus.bound(FAMILY, "big screen layout");
-            HookStatus.counted(FAMILY, PHONE_LAYOUT);
-            return true;
+            if (!Utils.settingsReady()) return -1;
+            if (Settings.PHONE_LAYOUT_ON_BIG_SCREENS.get()) {
+                HookStatus.bound(FAMILY, "big screen layout");
+                HookStatus.counted(FAMILY, PHONE_LAYOUT);
+                return 0;
+            }
+            if (Settings.TABLET_FOLD_LAYOUT_ON_BIG_SCREENS.get()) {
+                HookStatus.bound(FAMILY, "big screen layout");
+                HookStatus.counted(FAMILY, TABLET_FOLD_LAYOUT);
+                return 1;
+            }
+            return -1;
         } catch (Throwable failure) {
             HookStatus.threw(FAMILY, "big screen layout", failure);
-            return false;
+            return -1;
         }
+    }
+
+    /**
+     * Legacy boolean check: returns true when {@link Settings#PHONE_LAYOUT_ON_BIG_SCREENS} is on.
+     */
+    public static boolean phoneLayout() {
+        return bigScreenGate() == 0;
+    }
+
+    /**
+     * Spoofs {@link android.os.Build#MODEL} as Galaxy Z Fold 5 when tablet/fold layout is enabled.
+     */
+    public static String spoofModel(String real) {
+        try {
+            if (Utils.settingsReady() && Settings.TABLET_FOLD_LAYOUT_ON_BIG_SCREENS.get()) {
+                return FOLD_MODEL;
+            }
+        } catch (Throwable ignored) {
+        }
+        return real;
+    }
+
+    /**
+     * Spoofs {@link android.os.Build#MANUFACTURER} as samsung when tablet/fold layout is enabled.
+     */
+    public static String spoofManufacturer(String real) {
+        try {
+            if (Utils.settingsReady() && Settings.TABLET_FOLD_LAYOUT_ON_BIG_SCREENS.get()) {
+                return FOLD_MANUFACTURER;
+            }
+        } catch (Throwable ignored) {
+        }
+        return real;
+    }
+
+    /**
+     * Spoofs {@link android.os.Build#BRAND} as samsung when tablet/fold layout is enabled.
+     */
+    public static String spoofBrand(String real) {
+        try {
+            if (Utils.settingsReady() && Settings.TABLET_FOLD_LAYOUT_ON_BIG_SCREENS.get()) {
+                return FOLD_BRAND;
+            }
+        } catch (Throwable ignored) {
+        }
+        return real;
     }
 
     private static int yes() throws ReflectiveOperationException {

@@ -88,16 +88,15 @@ class BigScreenLayoutFixtureTest {
                 val patched = context.mutableClassDefBy(gate.definingClass).methods.single { it.sameAs(gate) }
                     .implementation!!.instructions.toList()
                 val where = "$name: $gate"
-                assertEquals("$where gains five instructions, once", original.size + 5, patched.size)
-                assertEquals("$where: the extension first", PHONE_LAYOUT, (patched[0] as ReferenceInstruction).reference.toString())
+                assertEquals("$where gains four instructions, once", original.size + 4, patched.size)
+                assertEquals("$where: the extension first", BIG_SCREEN_GATE, (patched[0] as ReferenceInstruction).reference.toString())
                 assertEquals("$where: its answer", Opcode.MOVE_RESULT, patched[1].opcode)
                 assertEquals("$where: its answer in v0", 0, (patched[1] as OneRegisterInstruction).registerA)
-                assertEquals("$where: a no goes on to Facebook's gate", Opcode.IF_EQZ, patched[2].opcode)
-                assertEquals("$where: the branch lands on the gate's own first instruction", 5,
+                assertEquals("$where: negative goes on to Facebook's gate", Opcode.IF_LTZ, patched[2].opcode)
+                assertEquals("$where: the branch lands on the gate's own first instruction", 4,
                     (patched[2] as BuilderOffsetInstruction).target.location.index)
-                assertEquals("$where: a yes answers false", 0, (patched[3] as NarrowLiteralInstruction).narrowLiteral)
-                assertEquals("$where: and returns it", Opcode.RETURN, patched[4].opcode)
-                assertEquals("$where: Facebook's gate follows", original.map { it.opcode }, patched.drop(5).map { it.opcode })
+                assertEquals("$where: and returns the answer", Opcode.RETURN, patched[3].opcode)
+                assertEquals("$where: Facebook's gate follows", original.map { it.opcode }, patched.drop(4).map { it.opcode })
                 checked += version
             }
         }
