@@ -1,0 +1,51 @@
+name: Build and Release MPP
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  packages: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Make gradlew executable
+        run: chmod +x gradlew
+
+      - name: Build Android MPP Bundle
+        env:
+          GITHUB_ACTOR: ${{ github.actor }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          ./gradlew generatePatchesList :patches:buildAndroid -x test --no-daemon
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v0.16.2
+          name: Hushfacebook v0.16.2 (Tablet & Galaxy Z Fold Layout)
+          body: |
+            ### Hushfacebook v0.16.2
+            - Added **Tablet and foldable layout on big screens** (*Bố cục máy tính bảng và màn hình gập*) toggle in Hushfacebook Settings > Appearance.
+            - Forces big screen layout gate and spoofs Samsung Galaxy Z Fold 5 (`SM-F946B`, `samsung`) so Xiaomi Pad 6 and other tablets get Facebook's multi-pane / centered tablet layout instead of a stretched phone feed.
+          files: |
+            patches/build/release/patches-*.mpp
+            patches/build/release/patches-*.cdx.json
+            patches/build/release/patches-*.tooling.json
+            patches/build/release/bundle.sha256
+            patches-bundle.json
