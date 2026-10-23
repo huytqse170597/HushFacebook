@@ -278,4 +278,25 @@ class BottomTabBarShapesTest {
             .map { "${it.definingClass}->${it.name}(${it.parameterTypes.joinToString("")})${it.returnType}" }
         assertTrue("$OVERRIDE isn't a public static method of the extension: $calls", OVERRIDE in calls)
     }
+
+    @Test
+    fun `device spoof hook uses invoke-static for low registers and invoke-static range for high registers`() {
+        for (reg in listOf(0, 15, 16, 26)) {
+            val testMethod = method(
+                """
+                    sget-object v$reg, Landroid/os/Build;->MODEL:Ljava/lang/String;
+                    return-void
+                """,
+                registers = 35,
+            )
+            testMethod.hookDeviceSpoof()
+            val insns = testMethod.implementation!!.instructions.toList()
+            assertEquals("sget-object + invoke + move-result + return-void", 4, insns.size)
+            assertEquals(Opcode.SGET_OBJECT, insns[0].opcode)
+            val expectedOpcode = if (reg < 16) Opcode.INVOKE_STATIC else Opcode.INVOKE_STATIC_RANGE
+            assertEquals("invoke opcode for v$reg", expectedOpcode, insns[1].opcode)
+            assertEquals("move-result-object opcode", Opcode.MOVE_RESULT_OBJECT, insns[2].opcode)
+            assertEquals("move-result-object register", reg, (insns[2] as OneRegisterInstruction).registerA)
+        }
+    }
 }

@@ -200,10 +200,17 @@ fun MutableMethod.injectHideViewCall(
     viewRegister: Int,
     classDescriptor: String,
     targetMethod: String,
-) = addInstruction(
-    insertIndex,
-    "invoke-static { v$viewRegister }, $classDescriptor->$targetMethod(Landroid/view/View;)V",
-)
+) {
+    val invoke = if (viewRegister < 16) {
+        "invoke-static { v$viewRegister }"
+    } else {
+        "invoke-static/range { v$viewRegister .. v$viewRegister }"
+    }
+    addInstruction(
+        insertIndex,
+        "$invoke, $classDescriptor->$targetMethod(Landroid/view/View;)V",
+    )
+}
 
 /**
  * Inserts instructions at a given index, using the existing control flow label at that index.

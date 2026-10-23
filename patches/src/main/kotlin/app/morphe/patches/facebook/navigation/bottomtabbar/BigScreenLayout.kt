@@ -8,6 +8,7 @@ import app.morphe.patcher.extensions.InstructionExtensions.addInstructions
 import app.morphe.patcher.extensions.InstructionExtensions.addInstructionsWithLabels
 import app.morphe.patcher.extensions.InstructionExtensions.getInstruction
 import app.morphe.patcher.patch.BytecodePatchContext
+import app.morphe.patcher.patch.PatchException
 import app.morphe.patcher.util.proxy.mutableTypes.MutableMethod
 import app.morphe.patcher.util.smali.ExternalLabel
 import app.morphe.patches.facebook.misc.extension.patchLog
@@ -170,12 +171,33 @@ internal fun MutableMethod.hookDeviceSpoof() {
     if (sites.isEmpty()) return
     for ((idx, hookMethod) in sites.sortedByDescending { it.first }) {
         val reg = (code[idx] as OneRegisterInstruction).registerA
+        if (reg > 255) {
+            throw PatchException("Register v$reg exceeds 8-bit limit for move-result-object in $definingClass->$name")
+        }
+        val invoke = if (reg < 16) {
+            "invoke-static { v$reg }, $hookMethod"
+        } else {
+            "invoke-static/range { v$reg .. v$reg }, $hookMethod"
+        }
         addInstructions(
             idx + 1,
             """
-                invoke-static { v$reg }, $hookMethod
+                $invoke
                 move-result-object v$reg
             """,
         )
+        val afterCode = implementation?.instructions?.toList()
+        val insertedInvoke = afterCode?.getOrNull(idx + 1)
+        val insertedMoveResult = afterCode?.getOrNull(idx + 2)
+        val expectedInvokeOpcode = if (reg < 16) Opcode.INVOKE_STATIC else Opcode.INVOKE_STATIC_RANGE
+        if (insertedInvoke?.opcode != expectedInvokeOpcode ||
+            insertedMoveResult?.opcode != Opcode.MOVE_RESULT_OBJECT
+        ) {
+            throw PatchException(
+                "Failed to inject device spoofing at index ${idx + 1} in $definingClass->$name: " +
+                    "expected $expectedInvokeOpcode followed by MOVE_RESULT_OBJECT, found " +
+                    "${insertedInvoke?.opcode} and ${insertedMoveResult?.opcode}"
+            )
+        }
     }
 }
